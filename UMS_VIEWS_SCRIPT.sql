@@ -45,3 +45,37 @@ FROM
     JOIN course_catalog ON course.course_catalog_id = course_catalog.id
     JOIN term ON course.term_id = term.id
     JOIN grade ON student_course.grade_id = grade.id;
+
+
+CREATE VIEW course_statistics_view AS
+SELECT 
+    course_catalog.course_name, 
+    COUNT(student_course.id) AS enrollment_count, 
+    MAX(student_course.percentage) AS highest_percentage, 
+    MIN(student_course.percentage) AS lowest_percentage,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY student_course.percentage) AS median_percentage
+FROM 
+    student_course
+JOIN 
+    course ON student_course.course_id = course.id 
+JOIN 
+    course_catalog ON course.course_catalog_id = course_catalog.id 
+WHERE 
+    student_course.student_course_status_id = 5 
+GROUP BY 
+    course_catalog.course_name;
+
+
+CREATE VIEW term_enrollment_summary_view AS
+SELECT 
+    term.name AS "Term Name",
+    COUNT(student.id) AS "Number of Students"
+FROM 
+    student
+JOIN 
+    term ON student.term_id = term.id
+GROUP BY 
+    term.name;
+
+
+
