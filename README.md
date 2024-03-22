@@ -37,3 +37,15 @@ Please execute the provided script to verify the views. It should execute succes
 
 ## 5.create_other_user_script.sql
 Then disconnect from ums (admin) and execute create_other_user_script.sql, after this login to appropritate users as needed to work on the views.
+
+## 6. Execute the below queries
+select * from student_information_view;
+select * from course_enrollment_view;
+select * from course_statistics_view;
+select * from term_enrollment_summary_view;
+select * from grade_overview;
+select * from professor_teaching_schedule_view;
+select * from full_course_detail_view;
+select * from student_transcript_view;
+select * from course_offered_in_term_view;
+
