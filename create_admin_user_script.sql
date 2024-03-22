@@ -7,6 +7,7 @@ EXCEPTION
             RAISE;
         END IF;
 END;
+/
 
 -- Now, create the user
 CREATE USER ums IDENTIFIED BY Password2024#;
