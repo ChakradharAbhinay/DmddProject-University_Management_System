@@ -143,5 +143,43 @@ JOIN course_catalog ON course.course_catalog_id = course_catalog.id
 JOIN professor ON professor.id = course.professor_id;
 
 
+CREATE OR REPLACE VIEW student_transcript_view AS
+SELECT
+    student.first_name || ' ' || student.last_name AS student_name,
+    course_catalog.course_name,
+    course.crn,
+    course_catalog.credits,
+    grade.name,
+    professor.first_name || ' ' || professor.last_name AS professor_name,
+    term.name AS term,
+    student_course_status.name AS outcome
+FROM
+    student_course
+JOIN student ON student.id = student_course.student_id
+JOIN course ON course.id = student_course.course_id
+JOIN grade ON grade.id = student_course.grade_id
+JOIN professor ON professor.id = course.professor_id
+JOIN course_catalog ON course_catalog.id = course.course_catalog_id
+JOIN term ON term.id = course.term_id
+JOIN student_course_status ON student_course_status.id = student_course.student_course_status_id
+ORDER BY
+    student.first_name;
 
+
+CREATE OR REPLACE VIEW course_offered_in_term_view AS
+SELECT
+    cc.course_name,
+    cc.description,
+    c.crn,
+    t.name AS term_name,
+    t.start_date,
+    t.end_date
+FROM
+    course_catalog cc
+RIGHT JOIN course c ON c.course_catalog_id = cc.id
+JOIN term t ON t.id = c.term_id
+WHERE
+    t.name = 'Spring 2023';
+
+commit;
 
