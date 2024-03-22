@@ -3,7 +3,7 @@
 ![image](https://github.com/ChakradharAbhinay/DmddProject-University_Management_System/assets/145234036/a3e2fd87-0627-45c8-a34e-3c8b2407fa2e)
 
 
-#Problem Statement
+# Problem Statement
 Managing the massive volume of data related to university operations is becoming more difficult and complex in the current educational environment. A reliable and effective system is needed to manage academic records, course schedules, enrollment information, faculty details, and other administrative tasks due to the various needs of students, faculty, and administrative personnel. Conventional manual systems are no longer adequate, which results in errors, inefficiencies, and challenges with information retrieval. A comprehensive and integrated database system is desperately needed to assist university administration's decision-making processes, simplify data management, and enable easy access to information.
 
 
