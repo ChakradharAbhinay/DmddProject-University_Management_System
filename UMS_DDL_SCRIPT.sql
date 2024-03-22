@@ -415,3 +415,376 @@ BEGIN
 END;
 /
 
+-----------------------------------------degree_type
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.degree_type (
+        id          NUMBER NOT NULL,
+        name        VARCHAR2(50 BYTE),
+        description VARCHAR2(50 BYTE),
+        is_enabled  VARCHAR2(1 BYTE),
+        created_by  VARCHAR2(50 BYTE),
+        created_on  DATE,
+        updated_by  VARCHAR2(50 BYTE),
+        updated_on  DATE
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('degree_type Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('degree_type Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+-------------------------CONSTRAINT degree_type_pk 
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    ALTER TABLE ums.degree_type ADD CONSTRAINT degree_type_pk PRIMARY KEY (id)
+  ';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT degree_type_pk added successfully.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT degree_type_pk already exists.');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+-------------------------employment_designation
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.employment_designation (
+        id                  NUMBER NOT NULL,
+        name                VARCHAR2(50 BYTE),
+        employment_grade_id NUMBER,
+        description         VARCHAR2(50 BYTE),
+        comments            VARCHAR2(100 BYTE),
+        is_enabled          VARCHAR2(1 BYTE),
+        created_by          VARCHAR2(50 BYTE),
+        created_on          DATE,
+        updated_by          VARCHAR2(50 BYTE),
+        updated_on          DATE
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('employment_designation Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('employment_designation Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+------------------------CONSTRAINT employment_designation_pk
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    ALTER TABLE ums.employment_designation ADD CONSTRAINT employment_designation_pk PRIMARY KEY (id)
+  ';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT employment_designation_pk added successfully.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT employment_designation_pk already exists.');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+------------------------employment_grade
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.employment_grade (
+        id          NUMBER NOT NULL,
+        name        VARCHAR2(50 BYTE),
+        description VARCHAR2(50 BYTE),
+        comments    VARCHAR2(100 BYTE),
+        is_enabled  VARCHAR2(1 BYTE),
+        created_by  VARCHAR2(50 BYTE),
+        created_on  DATE,
+        updated_by  VARCHAR2(50 BYTE),
+        updated_on  DATE
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('employment_grade Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('employment_grade Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+-------------------------CONSTRAINT employment_grade_pk
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    ALTER TABLE ums.employment_grade ADD CONSTRAINT employment_grade_pk PRIMARY KEY (id)
+  ';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT employment_grade_pk added successfully.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT employment_grade_pk already exists.');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+
+
+-------------------------employment_status
+DECLARE
+  v_sql_emp_status CLOB;
+BEGIN
+  v_sql_emp_status := '
+    CREATE TABLE ums.employment_status (
+        id         NUMBER(*, 0) NOT NULL,
+        name       VARCHAR2(50 BYTE),
+        is_enabled VARCHAR2(2 BYTE),
+        comments   VARCHAR2(100 BYTE),
+        created_by VARCHAR2(50 BYTE),
+        created_on DATE,
+        updated_by VARCHAR2(50 BYTE),
+        updated_on DATE
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql_emp_status;
+    DBMS_OUTPUT.PUT_LINE('employment_status Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('employment_status Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+---------------------CONSTRAINT employment_status_pk
+DECLARE
+  v_sql_emp_status_pk CLOB;
+BEGIN
+  v_sql_emp_status_pk := '
+    ALTER TABLE ums.employment_status ADD CONSTRAINT employment_status_pk PRIMARY KEY (id)
+  ';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql_emp_status_pk;
+    DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT employment_status_pk added successfully.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT employment_status_pk already exists.');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+-------------------------------employment_type
+DECLARE
+  v_sql_emp_type CLOB;
+BEGIN
+  v_sql_emp_type := '
+    CREATE TABLE ums.employment_type (
+        id         NUMBER(*, 0) NOT NULL,
+        name       VARCHAR2(50 BYTE),
+        is_enabled VARCHAR2(2 BYTE),
+        comments   VARCHAR2(100 BYTE),
+        created_by VARCHAR2(50 BYTE),
+        created_on DATE,
+        updated_by VARCHAR2(50 BYTE),
+        updated_on DATE
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql_emp_type;
+    DBMS_OUTPUT.PUT_LINE('employment_type Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('employment_type Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+------------CONSTRAINT employment_type_pk
+DECLARE
+  v_sql_emp_type_pk CLOB;
+BEGIN
+  v_sql_emp_type_pk := '
+    ALTER TABLE ums.employment_type ADD CONSTRAINT employment_type_pk PRIMARY KEY (id)
+  ';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql_emp_type_pk;
+    DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT employment_type_pk added successfully.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT employment_type_pk already exists.');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+--------------floor
+DECLARE
+  v_sql_floor CLOB;
+BEGIN
+  v_sql_floor := '
+    CREATE TABLE ums.floor (
+        id         NUMBER NOT NULL,
+        name       VARCHAR2(25 BYTE),
+        created_by VARCHAR2(15 BYTE),
+        created_on DATE,
+        updated_by VARCHAR2(15 BYTE),
+        updated_on DATE
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql_floor;
+    DBMS_OUTPUT.PUT_LINE('floor Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('floor Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+---------------------------CONSTRAINT floor_pk
+DECLARE
+  v_sql_floor_pk CLOB;
+BEGIN
+  v_sql_floor_pk := '
+    ALTER TABLE ums.floor ADD CONSTRAINT floor_pk PRIMARY KEY (id)
+  ';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql_floor_pk;
+    DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT floor_pk added successfully.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT floor_pk already exists.');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+---------------------------grade
+DECLARE
+  v_sql_grade CLOB;
+BEGIN
+  v_sql_grade := '
+    CREATE TABLE ums.grade (
+        id         NUMBER NOT NULL,
+        name       VARCHAR2(20 BYTE),
+        comments   VARCHAR2(50 BYTE),
+        is_enabled VARCHAR2(2 BYTE),
+        created_by VARCHAR2(15 BYTE),
+        created_on DATE,
+        updated_by VARCHAR2(15 BYTE),
+        updated_on DATE
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql_grade;
+    DBMS_OUTPUT.PUT_LINE('grade Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('grade Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+-----------------CONSTRAINT grade_pk
+DECLARE
+  v_sql_grade_pk CLOB;
+BEGIN
+  v_sql_grade_pk := '
+    ALTER TABLE ums.grade ADD CONSTRAINT grade_pk PRIMARY KEY (id)
+  ';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql_grade_pk;
+    DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT grade_pk added successfully.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT grade_pk already exists.');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+
