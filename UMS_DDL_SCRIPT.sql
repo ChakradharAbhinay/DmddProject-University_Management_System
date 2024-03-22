@@ -787,4 +787,343 @@ BEGIN
 END;
 /
 
+DECLARE
+  v_sql CLOB;
+BEGIN
+  -- Creating the location table
+  v_sql := '
+    CREATE TABLE ums.location (
+        id               NUMBER NOT NULL,
+        building_id      NUMBER,
+        floor_id         NUMBER,
+        room_no          NUMBER,
+        location_type_id NUMBER,
+        seating_capacity NUMBER,
+        created_by       VARCHAR2(15 BYTE),
+        created_on       DATE,
+        updated_by       VARCHAR2(15 BYTE),
+        updated_on       DATE
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('location Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('location Table already exists');
+      ELSE
+        DBMS_OUTPUT.PUT_LINE('Error creating location Table: ' || SQLERRM);
+        RAISE;
+      END IF;
+  END;
+
+  -- Adding primary key constraint
+  v_sql := '
+    ALTER TABLE ums.location ADD CONSTRAINT location_pk PRIMARY KEY (id)
+  ';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT location_pk added successfully.');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('Primary key CONSTRAINT location_pk already exists.');
+      ELSE
+        DBMS_OUTPUT.PUT_LINE('Error adding primary key CONSTRAINT location_pk: ' || SQLERRM);
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  -- Create ums.location_type table
+  v_sql := '
+    CREATE TABLE ums.location_type (
+      id           NUMBER NOT NULL,
+      name         VARCHAR2(25),
+      description  VARCHAR2(100),
+      comments     VARCHAR2(100),
+      created_by   VARCHAR2(15),
+      created_on   DATE,
+      updated_by   VARCHAR2(15),
+      updated_on   DATE,
+      CONSTRAINT location_type_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Location_Type Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('Location_Type Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+
+  -- Add primary key constraint to ums.location_type table
+  v_sql := '
+    ALTER TABLE ums.location_type ADD CONSTRAINT location_type_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key location_type_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('location_type_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+
+  -- Create ums.professor table
+  v_sql := '
+    CREATE TABLE ums.professor (
+      id                             NUMBER NOT NULL,
+      university_professor_number    VARCHAR2(50),
+      first_name                     VARCHAR2(50),
+      last_name                      VARCHAR2(50),
+      email                          VARCHAR2(50),
+      phone_number                   VARCHAR2(20),
+      dob                            DATE,
+      college_id                     NUMBER,
+      employment_type_id             NUMBER,
+      employment_designation_id      NUMBER,
+      employment_status_id           NUMBER,
+      comments                       VARCHAR2(100),
+      created_by                     VARCHAR2(50),
+      created_on                     DATE,
+      updated_by                     VARCHAR2(50),
+      updated_on                     DATE,
+      CONSTRAINT professor_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Professor Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('Professor Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+
+  -- Add primary key constraint to ums.professor table
+  v_sql := '
+    ALTER TABLE ums.professor ADD CONSTRAINT professor_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key professor_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('professor_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  -- Create ums.program table
+  v_sql := '
+    CREATE TABLE ums.program (
+      id                    NUMBER NOT NULL,
+      program_catalog_id    NUMBER,
+      term_id               NUMBER,
+      program_status_id     NUMBER,
+      comments              VARCHAR2(400),
+      created_by            VARCHAR2(200),
+      created_on            DATE,
+      updated_by            VARCHAR2(200),
+      updated_on            DATE,
+      CONSTRAINT program_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Program Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('Program Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+
+  -- Add primary key constraint to ums.program table
+  v_sql := '
+    ALTER TABLE ums.program ADD CONSTRAINT program_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key program_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('program_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+
+  -- Create ums.program_catalog table
+  v_sql := '
+    CREATE TABLE ums.program_catalog (
+      id                 NUMBER NOT NULL,
+      name               VARCHAR2(200),
+      description        VARCHAR2(150),
+      college_id         NUMBER,
+      degree_type_id     NUMBER,
+      comments           VARCHAR2(400),
+      is_enabled         VARCHAR2(1),
+      created_by         VARCHAR2(200),
+      created_on         DATE,
+      updated_by         VARCHAR2(200),
+      updated_on         DATE,
+      CONSTRAINT program_catalog_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Program_Catalog Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('Program_Catalog Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+
+  -- Add primary key constraint to ums.program_catalog table
+  v_sql := '
+    ALTER TABLE ums.program_catalog ADD CONSTRAINT program_catalog_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key program_catalog_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('program_catalog_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  -- Creating the program_status table
+  v_sql := '
+    CREATE TABLE ums.program_status (
+      id               NUMBER NOT NULL,
+      name             VARCHAR2(200),
+      description      VARCHAR2(200),
+      comments         VARCHAR2(200),
+      is_enabled       VARCHAR2(4),
+      created_by       VARCHAR2(200),
+      created_on       DATE,
+      updated_by       VARCHAR2(200),
+      updated_on       DATE,
+      CONSTRAINT program_status_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Program_Status Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('Program_Status Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+
+  -- Adding primary key constraint
+  v_sql := '
+    ALTER TABLE ums.program_status ADD CONSTRAINT program_status_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key program_status_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('program_status_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+
+  -- Here you can add additional blocks if needed
+END;
+/
+
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.role (
+      id            NUMBER NOT NULL,
+      name          VARCHAR2(25),
+      description   VARCHAR2(200),
+      is_enabled    VARCHAR2(2),
+      created_by    VARCHAR2(15),
+      created_on    DATE,
+      updated_by    VARCHAR2(15),
+      updated_on    DATE,
+      CONSTRAINT role_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Role Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('Role Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+---- CONSTRAINT role_pk
+  v_sql := '
+    ALTER TABLE ums.role ADD CONSTRAINT role_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key role_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('role_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
 
