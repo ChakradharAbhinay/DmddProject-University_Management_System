@@ -8,7 +8,10 @@ BEGIN
 END;
 /
 
+-- This view is designed to provide comprehensive information about university students.
 
+-- The view is named 'student_information_view'.
+-- The SELECT statement retrieves specific columns from various tables to compose the view.
 
 CREATE VIEW student_information_view AS
 SELECT 
@@ -28,6 +31,9 @@ FROM
     JOIN student ON student.program_id = program.id 
     JOIN student_status ON student.student_status_id = student_status.id;
 
+-- This view is intended to provide information about course enrollments for students.
+
+-- The view is named 'course_enrollment_view'.
 
 CREATE VIEW course_enrollment_view AS
 SELECT 
@@ -46,6 +52,9 @@ FROM
     JOIN term ON course.term_id = term.id
     JOIN grade ON student_course.grade_id = grade.id;
 
+-- This view is designed to provide statistics on course enrollments.
+
+-- The view is named 'course_statistics_view'.
 
 CREATE VIEW course_statistics_view AS
 SELECT 
@@ -65,6 +74,9 @@ WHERE
 GROUP BY 
     course_catalog.course_name;
 
+-- This view is intended to summarize the enrollment information for each term.
+
+-- The view is named 'term_enrollment_summary_view'.
 
 CREATE VIEW term_enrollment_summary_view AS
 SELECT 
@@ -77,6 +89,9 @@ JOIN
 GROUP BY 
     term.name;
 
+-- This view provides an overview of grades for student courses.
+
+-- The view is named 'grade_overview'.
 CREATE VIEW grade_overview AS
 SELECT
     sc.id AS student_course_id,
@@ -96,6 +111,9 @@ JOIN
 LEFT JOIN
     ums.grade g ON sc.grade_id = g.id;
 
+-- This view is designed to provide a schedule overview for professors, listing the courses they teach.
+
+-- The view is named 'professor_teaching_schedule_view'.
 
 CREATE VIEW professor_teaching_schedule_view AS
 SELECT
@@ -122,6 +140,9 @@ JOIN
 JOIN
     ums.course_catalog cc ON c.course_catalog_id = cc.id;
 
+-- This view combines various tables to provide detailed information about courses, their locations, and assigned professors.
+
+-- The view is named 'full_course_detail_view'.
 
 CREATE OR REPLACE VIEW full_course_detail_view AS
 SELECT
@@ -142,6 +163,9 @@ JOIN course ON course_schedule.course_id = course.id
 JOIN course_catalog ON course.course_catalog_id = course_catalog.id
 JOIN professor ON professor.id = course.professor_id;
 
+-- This view is designed to provide a student transcript, including details of courses taken, grades received, and other relevant information.
+
+-- The view is named 'student_transcript_view'.
 
 CREATE OR REPLACE VIEW student_transcript_view AS
 SELECT
@@ -165,6 +189,9 @@ JOIN student_course_status ON student_course_status.id = student_course.student_
 ORDER BY
     student.first_name;
 
+-- This view is designed to provide information about courses offered in a specific term.
+
+-- The view is named 'course_offered_in_term_view'.
 
 CREATE OR REPLACE VIEW course_offered_in_term_view AS
 SELECT
