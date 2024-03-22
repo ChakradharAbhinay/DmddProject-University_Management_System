@@ -1127,3 +1127,406 @@ BEGIN
 END;
 /
 
+
+----STUDENT table
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.student (
+      id                        NUMBER NOT NULL,
+      university_student_number VARCHAR2(50),
+      first_name                VARCHAR2(30),
+      last_name                 VARCHAR2(30),
+      student_status_id         NUMBER,
+      email                     VARCHAR2(40),
+      phone_number              VARCHAR2(15),
+      dob                       DATE,
+      passport_number           VARCHAR2(10),
+      program_id                NUMBER,
+      term_id                   NUMBER,
+      term_id1                  NUMBER,
+      created_by                VARCHAR2(15),
+      created_on                DATE,
+      updated_by                VARCHAR2(15),
+      updated_on                DATE,
+      CONSTRAINT student_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Student Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('Student Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+----CONSTRAINT student_pk
+  v_sql := '
+    ALTER TABLE ums.student ADD CONSTRAINT student_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key student_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('student_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+-----STUDENT_COURSE
+
+
+
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.student_course (
+      id                          NUMBER NOT NULL,
+      student_id                  NUMBER,
+      course_id                   NUMBER,
+      student_course_status_id    NUMBER,
+      percentage                  NUMBER,
+      grade_id                    NUMBER,
+      created_by                  VARCHAR2(15),
+      created_on                  DATE,
+      updated_by                  VARCHAR2(15),
+      updated_on                  DATE,
+      CONSTRAINT student_course_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('STUDENT_COURSE Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('STUDENT_COURSE Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+------ CONSTRAINT student_course_pk
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    ALTER TABLE ums.student_course ADD CONSTRAINT student_course_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key student_course_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('student_course_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+
+
+
+
+
+
+----STUDENT_COURSE_MARK
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.student_course_mark (
+      id                     NUMBER NOT NULL,
+      student_course_id      NUMBER,
+      course_assessment_id   NUMBER,
+      obtained_marks         NUMBER,
+      comments               VARCHAR2(200),
+      created_by             VARCHAR2(15),
+      created_on             DATE,
+      updated_by             VARCHAR2(15),
+      updated_on             DATE,
+      CONSTRAINT student_course_mark_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('STUDENT_COURSE_MARK Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('STUDENT_COURSE_MARK Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    ALTER TABLE ums.student_course_mark ADD CONSTRAINT student_course_mark_pk PRIMARY KEY (id)';
+----CONSTRAINT student_course_mark_pk
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key student_course_mark_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('student_course_mark_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+-----STUDENT_COURSE_STATUS
+
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.student_course_status (
+      id                 NUMBER NOT NULL,
+      name               VARCHAR2(20),
+      is_enabled         VARCHAR2(2),
+      created_by         VARCHAR2(15),
+      created_on         DATE,
+      updated_by         VARCHAR2(15),
+      updated_on         DATE,
+      CONSTRAINT student_course_status_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('STUDENT_COURSE_STATUS Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('STUDENT_COURSE_STATUS Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+----CONSTRAINT student_course_status_pk
+  v_sql := '
+    ALTER TABLE ums.student_course_status ADD CONSTRAINT student_course_status_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key student_course_status_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('student_course_status_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+----STUDENT_STATUS Table
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.student_status (
+      id               NUMBER NOT NULL,
+      status_name      VARCHAR2(20),
+      is_enabled       VARCHAR2(2),
+      created_by       VARCHAR2(15),
+      created_on       DATE,
+      updated_by       VARCHAR2(15),
+      updated_on       DATE,
+      CONSTRAINT student_status_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('STUDENT_STATUS Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('STUDENT_STATUS Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+----CONSTRAINT student_status_pk
+  v_sql := '
+    ALTER TABLE ums.student_status ADD CONSTRAINT student_status_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key student_status_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('student_status_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+----TERM Table
+
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.term (
+      id           NUMBER NOT NULL,
+      name         VARCHAR2(50),
+      start_date   DATE,
+      end_date     DATE,
+      year         NUMBER,
+      comments     VARCHAR2(100),
+      is_enabled   VARCHAR2(2),
+      created_by   VARCHAR2(50),
+      created_on   DATE,
+      updated_by   VARCHAR2(50),
+      updated_on   DATE,
+      CONSTRAINT term_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Term Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('Term Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+----CONSTRAINT term_pk
+  v_sql := '
+    ALTER TABLE ums.term ADD CONSTRAINT term_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key term_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('term_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+
+----TABLE USER_MANAGEMENT
+
+
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.USER_MANAGEMENT (
+      id                         NUMBER NOT NULL,
+      university_person_number   VARCHAR2(15),
+      password                   VARCHAR2(40),
+      is_locked                  VARCHAR2(2),
+      comments                   VARCHAR2(200),
+      created_by                 VARCHAR2(15),
+      created_on                 DATE,
+      updated_by                 VARCHAR2(15),
+      updated_on                 DATE,
+      CONSTRAINT user_management_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('USER_MANAGEMENT Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('USER_MANAGEMENT Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+----CONSTRAINT user_management_pk
+  v_sql := '
+    ALTER TABLE ums.USER_MANAGEMENT ADD CONSTRAINT user_management_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key user_management_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('user_management_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+-----TABLE USER_ROLE
+DECLARE
+  v_sql CLOB;
+BEGIN
+  v_sql := '
+    CREATE TABLE ums.user_role (
+      role_id             NUMBER NOT NULL,
+      id                  NUMBER NOT NULL,
+      user_management_id  NUMBER NOT NULL,
+      CONSTRAINT user_role_pk PRIMARY KEY (id)
+    )';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('User_Role Table created');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -955 THEN
+        DBMS_OUTPUT.PUT_LINE('User_Role Table already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+----CONSTRAINT user_role_pk
+  v_sql := '
+    ALTER TABLE ums.user_role ADD CONSTRAINT user_role_pk PRIMARY KEY (id)';
+
+  BEGIN
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Primary key user_role_pk added successfully');
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLCODE = -2260 THEN
+        DBMS_OUTPUT.PUT_LINE('user_role_pk already exists');
+      ELSE
+        RAISE;
+      END IF;
+  END;
+END;
+/
+
+
