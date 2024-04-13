@@ -288,3 +288,295 @@ EXCEPTION
 END CREATE_NEW_ADMINISTRATOR;
 /
 
+
+
+CREATE OR REPLACE FUNCTION enroll_in_course(
+    p_course_crn IN course.crn%TYPE,
+    p_university_student_number IN student.university_student_number%TYPE
+) RETURN VARCHAR2
+AS
+    v_student_id student.id%TYPE;
+    v_course_id course.id%TYPE;
+    v_enrollment_count NUMBER;
+    v_seating_capacity course.seating_capacity%TYPE;
+BEGIN
+    -- Check if the student exists and get the student ID
+    SELECT id INTO v_student_id
+    FROM student
+    WHERE university_student_number = p_university_student_number;
+
+    -- Check if the course exists and get the course ID
+    SELECT id INTO v_course_id
+    FROM course
+    WHERE crn = p_course_crn;
+
+    -- Check for current number of enrollments in the course
+    SELECT COUNT(*)
+    INTO v_enrollment_count
+    FROM student_course
+    WHERE course_id = v_course_id;
+
+    -- Check the seating capacity of the course
+    SELECT seating_capacity INTO v_seating_capacity
+    FROM course
+    WHERE id = v_course_id;
+
+    -- Compare current enrollments with seating capacity
+    IF v_enrollment_count < v_seating_capacity THEN
+        -- Check if the student is already enrolled
+        SELECT COUNT(*)
+        INTO v_enrollment_count
+        FROM student_course
+        WHERE student_id = v_student_id
+        AND course_id = v_course_id;
+        
+        IF v_enrollment_count > 0 THEN
+            RETURN 'Student is already enrolled in this course.';
+        ELSE
+            -- Enroll the student in the course
+            INSERT INTO student_course (student_id, course_id)
+            VALUES (v_student_id, v_course_id);
+            RETURN 'Student successfully enrolled in the course.';
+        END IF;
+    ELSE
+        RETURN 'Course is at full capacity.';
+    END IF;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN 'Student or course not found.';
+    WHEN OTHERS THEN
+        RETURN 'Error enrolling student: ' || SQLERRM;
+END;
+/
+
+
+CREATE OR REPLACE FUNCTION Assign_Teaching_Assistant(
+    p_professor_email VARCHAR2,
+    p_course_id NUMBER,  -- Using course ID directly as per your schema
+    p_ta_email VARCHAR2,
+    p_start_date DATE,
+    p_end_date DATE,
+    p_employment_type_id NUMBER,
+    p_employment_designation_id NUMBER,
+    p_employment_status_id NUMBER,
+    p_comments VARCHAR2
+) RETURN VARCHAR2
+IS
+    v_professor_id NUMBER;
+    v_ta_id NUMBER;
+    v_course_count NUMBER;
+BEGIN
+    -- Retrieve the professor ID using the email
+    SELECT id INTO v_professor_id
+    FROM professor
+    WHERE email = p_professor_email;
+
+    -- Retrieve the TA ID using the TA email
+    SELECT id INTO v_ta_id
+    FROM student  -- Assuming TAs are recorded in the student table
+    WHERE email = p_ta_email;
+
+    -- Check if the course is taught by the professor
+    SELECT COUNT(*)
+    INTO v_course_count
+    FROM course
+    WHERE id = p_course_id AND professor_id = v_professor_id;
+
+    -- If no course matches, return an error message
+    IF v_course_count = 0 THEN
+        RETURN 'Error: No such course taught by this professor.';
+    END IF;
+
+    -- Insert the teaching assistant assignment
+    INSERT INTO course_teaching_assistant (
+        course_id,
+        student_id,
+        start_date,
+        end_date,
+        employment_type_id,
+        employment_designation_id,
+        employment_status_id,
+        comments,
+        created_by,
+        created_on,
+        updated_by,
+        updated_on
+    ) VALUES (
+        p_course_id,
+        v_ta_id,
+        p_start_date,
+        p_end_date,
+        p_employment_type_id,
+        p_employment_designation_id,
+        p_employment_status_id,
+        p_comments,
+        p_professor_email, -- Using the professor's email as the creator
+        SYSDATE,
+        p_professor_email, -- Using the professor's email as the updater
+        SYSDATE
+    );
+
+    -- Return success message
+    RETURN 'Teaching assistant assigned successfully.';
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN 'Error: Invalid professor email or TA email.';
+    WHEN OTHERS THEN
+        -- In case of any exception, return the error
+        RETURN 'Error: ' || SQLERRM;
+END;
+/
+
+
+CREATE OR REPLACE FUNCTION Enter_Assignment_Marks(
+    p_ta_id NUMBER,
+    p_course_id NUMBER,
+    p_course_assessment_id NUMBER,
+    p_student_course_id NUMBER,
+    p_marks NUMBER,
+    p_comments VARCHAR2
+) RETURN VARCHAR2
+IS
+    v_ta_course_count NUMBER;
+BEGIN
+    -- Check if the TA is assigned to the course
+    SELECT COUNT(*)
+    INTO v_ta_course_count
+    FROM course_teaching_assistant
+    WHERE STUDENT_ID = p_ta_id AND COURSE_ID = p_course_id;
+
+    IF v_ta_course_count = 0 THEN
+        RETURN 'Error: TA is not assigned to this course.';
+    END IF;
+    
+    -- Check if the marks are within a valid range (assumed 0 to 100)
+    IF p_marks < 0 OR p_marks > 100 THEN
+        RETURN 'Error: Marks must be between 0 and 100.';
+    END IF;
+
+    -- Enter the marks
+    INSERT INTO student_course_mark (
+        STUDENT_COURSE_ID,
+        COURSE_ASSESSMENT_ID,
+        OBTAINED_MARKS,
+        COMMENTS,
+        CREATED_BY,
+        CREATED_ON,
+        UPDATED_BY,
+        UPDATED_ON
+    ) VALUES (
+        p_student_course_id,
+        p_course_assessment_id,
+        p_marks,
+        p_comments,
+        TO_CHAR(p_ta_id), -- Assuming the TA's ID is being used to track who created/updated the record
+        SYSDATE,
+        TO_CHAR(p_ta_id),
+        SYSDATE
+    );
+
+    RETURN 'Marks entered successfully.';
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN 'Error: Invalid TA ID, course ID, or assessment ID.';
+    WHEN OTHERS THEN
+        RETURN 'Error: ' || SQLERRM;
+END;
+/
+
+
+CREATE OR REPLACE FUNCTION ums.create_course (
+    p_professor_uni_num  VARCHAR2,
+    p_course_catalog_id  NUMBER,
+    p_term_id            NUMBER,
+    p_crn                NUMBER,
+    p_seating_capacity   NUMBER DEFAULT 100
+) RETURN NUMBER AS
+    v_college_id NUMBER;
+    v_professor_id NUMBER;
+    v_course_id NUMBER;
+    v_count NUMBER;
+BEGIN
+    -- Get professor ID and college from university professor number
+    SELECT id, college_id INTO v_professor_id, v_college_id
+    FROM ums.professor
+    WHERE university_professor_number = p_professor_uni_num;
+
+    -- Check if professor exists
+    IF v_professor_id IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20001, 'The mentioned professor doesnt exist.');
+    END IF;
+
+    -- Check if course_catalog exists
+    SELECT COUNT(*) INTO v_count FROM ums.course_catalog WHERE ID = p_course_catalog_id;
+    IF v_count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20002, 'The mentioned course catalog doesnt exist.');
+    END IF;
+
+    -- Check if term exists
+    SELECT COUNT(*) INTO v_count FROM ums.term WHERE ID = p_term_id;
+    IF v_count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20003, 'The mentioned term doesnt exist.');
+    END IF;
+
+    -- Check if crn is unique
+    SELECT COUNT(*) INTO v_count FROM ums.course WHERE CRN = p_crn;
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20004, 'CRN should be unique.');
+    END IF;
+
+    -- Insert into COURSE table
+    INSERT INTO ums.course (ID, COURSE_CATALOG_ID, PROFESSOR_ID, TERM_ID, CRN, SEATING_CAPACITY, CREATED_BY, CREATED_ON)
+    VALUES ((SELECT MAX(ID) + 1 FROM ums.course), p_course_catalog_id, v_professor_id, p_term_id, p_crn, p_seating_capacity, 'UMS', SYSDATE);
+    
+    RETURN v_course_id;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20005, 'Error occurred: ' || SQLERRM);
+END;
+/
+
+
+
+CREATE OR REPLACE FUNCTION ums.create_course_schedule (
+    p_course_id          NUMBER,
+    p_day_of_week        VARCHAR2,
+    p_start_time         VARCHAR2,
+    p_end_time           VARCHAR2,
+    p_location           VARCHAR2
+) RETURN NUMBER AS
+    v_schedule_id NUMBER;
+BEGIN
+    -- Insert the schedule
+    INSERT INTO ums.course_schedule (course_id, day, start_time, end_time, location_id, created_by, created_on)
+    VALUES (p_course_id, p_day_of_week, p_start_time, p_end_time, p_location, 'System', SYSDATE);
+    
+    -- Return the course ID for confirmation
+    RETURN p_course_id;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Generic exception handling
+        RAISE_APPLICATION_ERROR(-20002, SQLERRM);
+END;
+/
+
+
+CREATE OR REPLACE FUNCTION ums.create_assessment (
+    p_university_professor_number VARCHAR2,
+    p_course_id                   NUMBER,
+    p_name                        VARCHAR2,
+    p_weightage                   NUMBER,
+    p_total_marks                 NUMBER,
+    p_comments                    VARCHAR2,
+    p_assessment_id               NUMBER -- Add this parameter to provide the ID manually
+) RETURN NUMBER AS
+    v_professor_id NUMBER;
+    v_term_end_date DATE;
+    v_today DATE := SYSDATE;
+BEGIN
+    -- Check if weightage is between 0 and 1
+    IF p_weightage <= 0 OR p_weightage > 1 THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Weightage must be a decimal between 0 and 1.');
+    END IF;
