@@ -1,4 +1,4 @@
-REATE OR REPLACE PROCEDURE create_program (
+CREATE OR REPLACE PROCEDURE create_program (
     p_college_name    IN VARCHAR2,
     p_degree_type     IN VARCHAR2,
     p_program_name    IN VARCHAR2,
