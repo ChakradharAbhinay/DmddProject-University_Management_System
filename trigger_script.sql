@@ -254,4 +254,91 @@ EXCEPTION
 END;
 /
 
+CREATE OR REPLACE PROCEDURE check_student_completion_procedure (
+    p_id             IN student_course.id%TYPE,
+    p_student_id     IN student_course.student_id%TYPE
+) IS
+    new_status_id   INT;
+    total_credits   INT;
+    new_status      INT;
+    degree_category INT; -- Assuming degree_type_id is retrieved from the program_catalog table
+BEGIN
+    -- Calculate total credits for the student
+    SELECT student_course_status_id INTO new_status FROM student_course WHERE id = p_id;
+
+    SELECT SUM(course_catalog.credits)
+    INTO total_credits
+    FROM student_course
+    JOIN course ON student_course.course_id = course.id
+    JOIN course_catalog ON course.course_catalog_id = course_catalog.id
+    WHERE student_course.student_id = p_student_id
+    GROUP BY student_course.student_id;
+
+    -- Retrieve the degree category of the student's program
+    SELECT pc.degree_type_id INTO degree_category
+    FROM student s
+    JOIN program p ON s.program_id = p.id
+    JOIN program_catalog pc ON p.program_catalog_id = pc.id
+    WHERE s.id = p_student_id;
+
+    dbms_output.put_line(total_credits);
+    IF new_status = 5 THEN -- Assuming 5 indicates completed status
+        IF (degree_category = 1 AND total_credits >= 12) OR (degree_category = 2 AND total_credits >= 10) THEN
+            -- Update student status to graduated if the conditions are met
+            UPDATE student
+            SET student_status_id = 1
+            WHERE id = p_student_id;
+
+            dbms_output.put_line('Student Successfully completed the required credits and has graduated the program');
+            dbms_output.put_line(p_id);
+        END IF;
+    END IF;
+
+END;
+/
+
+  CREATE OR REPLACE PACKAGE student_course_trigger_pkg AS
+  -- Define a package-level collection to store the IDs of updated rows
+    TYPE id_list IS
+        TABLE OF student_course.id%TYPE;
+
+  -- Package-level variable to hold the IDs of updated rows
+    updated_ids id_list := id_list();
+END student_course_trigger_pkg;
+/
+CREATE OR REPLACE TRIGGER student_course_update_trigger AFTER
+    UPDATE ON student_course
+    FOR EACH ROW
+BEGIN
+  -- Store the ID of the updated row
+    student_course_trigger_pkg.updated_ids.extend;
+    student_course_trigger_pkg.updated_ids(student_course_trigger_pkg.updated_ids.last) := :new.id;
+END;
+/
+
+
+CREATE OR REPLACE TRIGGER student_course_update_trigger_after_statement AFTER
+    UPDATE ON student_course
+DECLARE
+  -- Define a local variable to hold the student_id
+    v_student_id student_course.student_id%TYPE;
+BEGIN
+  -- Process the updated rows
+    FOR i IN 1..student_course_trigger_pkg.updated_ids.count LOOP
+        SELECT
+            student_id
+        INTO v_student_id
+        FROM
+            student_course
+        WHERE
+            id = student_course_trigger_pkg.updated_ids(i);
+    -- Call the procedure for each updated row
+        check_student_completion_procedure(student_course_trigger_pkg.updated_ids(i), v_student_id);
+    END LOOP;
+
+  -- Clear the package-level collection after processing
+    student_course_trigger_pkg.updated_ids.DELETE;
+END;
+/
+
 
