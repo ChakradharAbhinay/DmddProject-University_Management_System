@@ -120,3 +120,138 @@ BEGIN
     END IF;
 END;
 /
+
+CREATE OR REPLACE TRIGGER trigger_course_schedule_checks
+BEFORE INSERT OR UPDATE ON course_schedule
+FOR EACH ROW
+DECLARE
+    v_location_seating_capacity NUMBER;
+    v_course_seating_capacity NUMBER;
+    v_overlap_count NUMBER;
+    v_course_count NUMBER;
+    v_professor_id NUMBER;
+    v_term_id NUMBER;
+BEGIN
+    -- Retrieve seating capacities
+    SELECT seating_capacity INTO v_course_seating_capacity FROM course WHERE id = :NEW.course_id;
+    SELECT seating_capacity INTO v_location_seating_capacity FROM location WHERE id = :NEW.location_id;
+
+    -- Check if the location's seating capacity is sufficient
+    IF v_course_seating_capacity > v_location_seating_capacity THEN
+        RAISE_APPLICATION_ERROR(-20008, 'Course seating capacity exceeds location seating capacity.');
+    END IF;
+
+    -- Check for overlapping course schedules
+    SELECT COUNT(*)
+    INTO v_overlap_count
+    FROM course_schedule
+    WHERE course_id = :NEW.course_id
+      AND day = :NEW.day
+      AND (
+           (:NEW.start_time < end_time AND :NEW.end_time > start_time)
+        OR (start_time < :NEW.end_time AND end_time > :NEW.start_time)
+      )
+      AND id != :NEW.id;
+
+    IF v_overlap_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Professor already has a class scheduled for this time slot on the same day.');
+    END IF;
+
+    -- Retrieve professor ID and term ID for the course
+    SELECT professor_id, term_id INTO v_professor_id, v_term_id FROM course WHERE id = :NEW.course_id;
+
+    -- Check how many courses the professor is currently assigned to for the term
+    SELECT COUNT(*)
+    INTO v_course_count
+    FROM course
+    WHERE professor_id = v_professor_id
+      AND term_id = v_term_id
+      AND id != :NEW.course_id; -- Exclude the current course in update scenarios
+
+    IF v_course_count >= 2 THEN  -- Assuming 2 is the limit
+        RAISE_APPLICATION_ERROR(-20007, 'Professor cannot teach more than two courses in the same semester.');
+    END IF;
+END;
+/
+
+
+
+CREATE OR REPLACE TRIGGER trigger_before_insert_ta
+BEFORE INSERT ON ums.COURSE_TEACHING_ASSISTANT
+FOR EACH ROW
+DECLARE
+  v_course_term_id NUMBER;
+  v_count_ta_courses NUMBER;
+  v_passed_course_count NUMBER;
+BEGIN
+  -- Check if the student has passed the course
+  SELECT COUNT(*)
+  INTO v_passed_course_count
+  FROM STUDENT_COURSE sc
+  JOIN COURSE c ON sc.COURSE_ID = c.ID
+  WHERE sc.STUDENT_ID = :NEW.STUDENT_ID
+  AND c.COURSE_CATALOG_ID = (SELECT COURSE_CATALOG_ID FROM COURSE WHERE ID = :NEW.COURSE_ID)
+  AND sc.STUDENT_COURSE_STATUS_ID = (SELECT ID FROM STUDENT_COURSE_STATUS WHERE NAME = 'Passed');
+
+  IF v_passed_course_count = 0 THEN
+    RAISE_APPLICATION_ERROR(-20001, 'The student must have passed the course to become a TA.');
+  END IF;
+
+  -- Check if the student is already a TA for two courses in the same semester
+  SELECT TERM_ID INTO v_course_term_id FROM COURSE WHERE ID = :NEW.COURSE_ID;
+  
+  SELECT COUNT(*)
+  INTO v_count_ta_courses
+  FROM COURSE_TEACHING_ASSISTANT cta
+  JOIN COURSE c ON cta.COURSE_ID = c.ID
+  WHERE cta.STUDENT_ID = :NEW.STUDENT_ID
+  AND c.TERM_ID = v_course_term_id;
+
+  IF v_count_ta_courses >= 2 THEN
+    RAISE_APPLICATION_ERROR(-20002, 'A student cannot be a TA for more than two courses in the same semester.');
+  END IF;
+  
+  SELECT COUNT(*)
+  INTO v_count_ta_courses
+  FROM COURSE_TEACHING_ASSISTANT cta
+  JOIN COURSE c ON cta.COURSE_ID = c.ID
+  WHERE cta.STUDENT_ID = :NEW.STUDENT_ID and cta.course_id=:NEW.Course_ID
+  AND c.TERM_ID = v_course_term_id;
+  
+  IF v_count_ta_courses >= 1 THEN
+    RAISE_APPLICATION_ERROR(-20003, 'no duplicate record of the same TA in same semester is allowed.');
+  END IF;
+END;
+/
+
+
+CREATE OR REPLACE TRIGGER trigger_professor_course_college_validation
+BEFORE INSERT OR UPDATE ON ums.course
+FOR EACH ROW
+DECLARE
+  v_college_id_professor NUMBER;
+  v_college_id_course    NUMBER;
+BEGIN
+  -- Retrieve the college ID of the professor
+  SELECT college_id INTO v_college_id_professor
+  FROM ums.professor
+  WHERE id = :NEW.professor_id;
+  
+  -- Retrieve the college ID of the course through the course_catalog and program_catalog
+  SELECT pc.college_id INTO v_college_id_course
+  FROM ums.course_catalog cc
+  JOIN ums.program_catalog pc ON cc.program_catalog_id = pc.id
+  WHERE cc.id = :NEW.course_catalog_id;
+  
+  -- Compare the college IDs
+  IF v_college_id_professor != v_college_id_course THEN
+    RAISE_APPLICATION_ERROR(-20003, 'Professors can only teach courses offered by their college.');
+  END IF;
+  
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    RAISE_APPLICATION_ERROR(-20004, 'Invalid professor ID or course catalog ID.');
+END;
+/
+
+
