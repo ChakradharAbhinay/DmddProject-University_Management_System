@@ -342,3 +342,47 @@ END;
 /
 
 
+CREATE OR REPLACE TRIGGER trg_enroll_new_program
+BEFORE INSERT ON student
+FOR EACH ROW
+DECLARE
+    v_total_programs INT;
+    v_completed_programs INT;
+    v_graduated_from_new_program INT;
+BEGIN
+    -- Count the total number of programs for the student
+    SELECT COUNT(*)
+    INTO v_total_programs
+    FROM student
+    WHERE passport_number = :NEW.passport_number;
+
+    -- Count the number of completed or dropped programs
+    SELECT COUNT(*)
+    INTO v_completed_programs
+    FROM student
+    WHERE passport_number = :NEW.passport_number
+    AND student_status_id IN (3, 4, 5); -- Assuming 3: Completed, 4: Dropped, 5: Graduated
+
+    -- Check if all programs (including completed or dropped) have been accounted for
+    IF v_completed_programs < v_total_programs THEN
+        -- Student has active programs that are not completed or dropped
+        RAISE_APPLICATION_ERROR(-20001, 'You must complete or drop all previous programs before enrolling in a new one.');
+    END IF;
+
+    -- Check if the student has graduated from the new program previously
+    SELECT COUNT(*)
+    INTO v_graduated_from_new_program
+    FROM student
+    WHERE passport_number = :NEW.passport_number
+    AND program_id = :NEW.program_id
+    AND student_status_id = 3; -- Assuming 5: Graduated
+
+    IF v_graduated_from_new_program > 0 THEN
+        -- Student has previously graduated from the new program
+        RAISE_APPLICATION_ERROR(-20002, 'You cannot register for a program you have graduated from previously.');
+    END IF;
+END;
+/
+
+
+
