@@ -580,3 +580,246 @@ BEGIN
     IF p_weightage <= 0 OR p_weightage > 1 THEN
         RAISE_APPLICATION_ERROR(-20004, 'Weightage must be a decimal between 0 and 1.');
     END IF;
+
+
+    -- Get professor's ID and associated term end date of the course
+    SELECT p.id, t.end_date
+    INTO v_professor_id, v_term_end_date
+    FROM ums.professor p
+    JOIN ums.course c ON p.id = c.professor_id
+    JOIN ums.term t ON c.term_id = t.id
+    WHERE p.university_professor_number = p_university_professor_number
+    AND c.id = p_course_id;
+
+    -- Check if the term end date is in the past
+    IF v_term_end_date < v_today THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Cannot set assessment for past terms.');
+    END IF;
+
+    -- Insert the assessment
+    INSERT INTO ums.course_assessment (id, course_id, name, weightage, total_marks, comments, created_by, created_on)
+    VALUES (p_assessment_id, p_course_id, p_name, p_weightage, p_total_marks, p_comments, 'System', SYSDATE);
+
+    -- Return the ID of the new assessment for confirmation
+    RETURN p_assessment_id;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Invalid professor number or course ID.');
+    WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20002, SQLERRM);
+END;
+/
+
+
+
+CREATE OR REPLACE FUNCTION ums.release_grades (
+    p_course_id        NUMBER,
+    p_assessment_id    NUMBER,
+    p_grade_name       VARCHAR2,
+    p_comments         VARCHAR2,
+    p_is_enabled       VARCHAR2,
+    p_created_by       VARCHAR2,
+    p_created_on       DATE
+) RETURN NUMBER AS
+    v_grade_id NUMBER;
+BEGIN
+    -- Insert the released grade
+    INSERT INTO ums.grade (id, name, comments, is_enabled, created_by, created_on)
+    VALUES (NULL, p_grade_name, p_comments, p_is_enabled, p_created_by, p_created_on)
+    RETURNING id INTO v_grade_id;
+
+    -- Insert the released grade into student_course table
+    INSERT INTO ums.student_course (id, course_id, grade_id, created_by, created_on)
+    SELECT sc.id, p_course_id, v_grade_id, p_created_by, p_created_on
+    FROM ums.student_course sc
+    WHERE sc.course_id = p_course_id
+    AND sc.grade_id IS NULL; -- Assuming you want to update only records with NULL grade_id
+    
+    -- Return 1 if successful
+    RETURN 1;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Return 0 if an error occurs
+        RETURN 0;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE deregister_from_course (
+    p_course_crn                IN course.crn%TYPE,
+    p_university_student_number IN student.university_student_number%TYPE
+) AS
+
+    v_student_id  student.id%TYPE;
+    v_course_id   course.id%TYPE;
+    v_start_date  term.start_date%TYPE;
+    v_is_enrolled INT;
+BEGIN
+    -- Check if the student exists
+    BEGIN
+        SELECT
+            id
+        INTO v_student_id
+        FROM
+            student
+        WHERE
+            university_student_number = p_university_student_number;
+
+    EXCEPTION
+        WHEN no_data_found THEN
+            dbms_output.put_line('Student with University Student Number '
+                                 || p_university_student_number
+                                 || ' does not exist');
+            RETURN;
+    END;
+
+    -- Check if the course exists
+    BEGIN
+        SELECT
+            id
+        INTO v_course_id
+        FROM
+            course
+        WHERE
+            crn = p_course_crn;
+
+    EXCEPTION
+        WHEN no_data_found THEN
+            dbms_output.put_line('Invalid Course CRN');
+            RETURN;
+    END;
+
+    -- Check if the student is enrolled in the course
+    BEGIN
+        SELECT
+            start_date
+        INTO v_start_date
+        FROM
+                 term
+            JOIN course ON course.term_id = term.id
+        WHERE
+            course.id = v_course_id;
+
+        SELECT
+            COUNT(*)
+        INTO v_is_enrolled
+        FROM
+            student_course
+        WHERE
+                student_id = v_student_id
+            AND course_id = v_course_id;
+
+        IF v_start_date > sysdate THEN
+            IF v_is_enrolled > 0 THEN
+                -- Remove the student from the course
+                DELETE FROM student_course
+                WHERE
+                        course_id = v_course_id
+                    AND student_id = v_student_id;
+
+                dbms_output.put_line(v_is_enrolled);
+                dbms_output.put_line('Student successfully deregistered from the course.');
+            ELSE
+                dbms_output.put_line(v_is_enrolled);
+                dbms_output.put_line('Student is not enrolled in the specified course.');
+            END IF;
+        ELSE
+            dbms_output.put_line('Course has already started. Deregistration not allowed.');
+        END IF;
+
+    END;
+
+END;
+/
+
+set serveroutput on;
+
+CREATE OR REPLACE PROCEDURE insert_student (
+    p_first_name      VARCHAR2,
+    p_last_name       VARCHAR2,
+    p_date_of_birth   DATE,
+    p_passport_number VARCHAR2,
+    p_program_id      INT,
+    p_email           VARCHAR2,
+    p_student_status  VARCHAR2,
+    p_phone_number    INT
+) AS
+    v_student_id     INT;
+    v_term_id        INT;
+    v_student_status INT;
+BEGIN
+    
+    -- Check if the program ID exists
+    SELECT
+        term_id
+    INTO v_term_id
+    FROM
+        program
+    WHERE
+            id = p_program_id
+        AND program_status_id < 3; -- Assuming program_status_id = 2 indicates an active program and program_status_id = 1 means published program.
+    dbms_output.put_line('v_term_id: ' || v_term_id);
+
+    -- Check if the student status exists
+    SELECT
+        id
+    INTO v_student_status
+    FROM
+        student_status
+    WHERE
+        status_name = p_student_status;
+
+    dbms_output.put_line('v_student_status: ' || v_student_status);
+
+    -- Validate first name and last name (should not contain numbers)
+    IF regexp_like(p_first_name, '[[:digit:]]') OR regexp_like(p_last_name, '[[:digit:]]') THEN
+        dbms_output.put_line('Error: First name and last name should not contain numbers.');
+        RETURN;
+    END IF;
+
+    -- Validate email format
+    IF instr(p_email, '@') = 0 THEN
+        dbms_output.put_line('Error: Email address should contain an "@" symbol.');
+        RETURN;
+    END IF;
+
+    -- Insert the student record
+    INSERT INTO student (
+        id,
+        first_name,
+        last_name,
+        dob,
+        passport_number,
+        program_id,
+        term_id,
+        email,
+        student_status_id,
+        phone_number
+    ) VALUES (
+        (select max(ID)+1 from ums.student),
+        p_first_name,
+        p_last_name,
+        p_date_of_birth,
+        p_passport_number,
+        p_program_id,
+        v_term_id,
+        p_email,
+        v_student_status,
+        p_phone_number
+    );
+
+    -- Print success message
+    dbms_output.put_line('Student inserted successfully with ID: ' || v_student_id);
+EXCEPTION
+    WHEN no_data_found THEN
+        IF v_term_id IS NULL THEN
+            dbms_output.put_line('Error: Program ID does not exist.');
+        ELSIF v_student_status IS NULL THEN
+            dbms_output.put_line('Error: Student status does not exist.');
+        END IF;
+    WHEN OTHERS THEN
+        -- Print the error message
+        dbms_output.put_line('Error: ' || sqlerrm);
+END;
+/
+
+
