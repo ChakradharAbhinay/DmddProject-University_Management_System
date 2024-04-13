@@ -822,4 +822,355 @@ EXCEPTION
 END;
 /
 
+--CREATE SEQUENCE professor_id_seq START WITH 1000 INCREMENT BY 1 NOCACHE NOCYCLE;
+
+CREATE OR REPLACE PROCEDURE insert_professor (
+    p_university_professor_number VARCHAR2,
+    p_first_name                  VARCHAR2,
+    p_last_name                   VARCHAR2,
+    p_email                       VARCHAR2,
+    p_phone_number                VARCHAR2,
+    p_dob                         DATE,
+    p_college_name                VARCHAR2,
+    p_employment_type             VARCHAR2,
+    p_employment_designation      VARCHAR2,
+    p_employment_status           VARCHAR2
+) AS
+    v_professor_id              INT;
+    v_college_id                INT;
+    v_employment_type_id        INT;
+    v_employment_designation_id INT;
+    v_employment_status_id      INT;
+BEGIN
+    -- Generate a new professor ID using the sequence
+    --SELECT
+    --    professor_id_seq.NEXTVAL
+    --INTO v_professor_id
+    --FROM
+    --    dual;
+
+    -- Validate first name and last name (should not contain numbers)
+    IF regexp_like(p_first_name, '[[:digit:]]') THEN
+        raise_application_error(-20001, 'First name should not contain numbers.');
+    END IF;
+
+    IF regexp_like(p_last_name, '[[:digit:]]') THEN
+        raise_application_error(-20002, 'Last name should not contain numbers.');
+    END IF;
+
+    -- Validate email format
+    IF instr(p_email, '@') = 0 THEN
+        raise_application_error(-20003, 'Email address should contain an "@" symbol.');
+    END IF;
+
+    -- Retrieve the college ID for the given college name
+    BEGIN
+        SELECT
+            id
+        INTO v_college_id
+        FROM
+            college
+        WHERE
+            name = p_college_name;
+
+    EXCEPTION
+        WHEN no_data_found THEN
+            raise_application_error(-20004, 'College name not found: ' || p_college_name);
+    END;
+
+    -- Retrieve the employment type ID for the given employment type
+    BEGIN
+        SELECT
+            id
+        INTO v_employment_type_id
+        FROM
+            employment_type
+        WHERE
+            name = p_employment_type;
+
+    EXCEPTION
+        WHEN no_data_found THEN
+            raise_application_error(-20005, 'Employment type not found: ' || p_employment_type);
+    END;
+
+    -- Retrieve the employment designation ID for the given employment designation
+    BEGIN
+        SELECT
+            id
+        INTO v_employment_designation_id
+        FROM
+            employment_designation
+        WHERE
+            name = p_employment_designation;
+
+    EXCEPTION
+        WHEN no_data_found THEN
+            raise_application_error(-20006, 'Employment designation not found: ' || p_employment_designation);
+    END;
+
+    -- Retrieve the employment status ID for the given employment status
+    BEGIN
+        SELECT
+            id
+        INTO v_employment_status_id
+        FROM
+            employment_status
+        WHERE
+            name = p_employment_status;
+
+    EXCEPTION
+        WHEN no_data_found THEN
+            raise_application_error(-20007, 'Employment status not found: ' || p_employment_status);
+    END;
+
+    -- Insert the professor record
+    INSERT INTO professor (
+        id,
+        university_professor_number,
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        dob,
+        college_id,
+        employment_type_id,
+        employment_designation_id,
+        employment_status_id
+    ) VALUES (
+        (select max(ID)+1 from professor),
+        p_university_professor_number,
+        p_first_name,
+        p_last_name,
+        p_email,
+        p_phone_number,
+        p_dob,
+        v_college_id,
+        v_employment_type_id,
+        v_employment_designation_id,
+        v_employment_status_id
+    );
+
+    -- Print success message
+    dbms_output.put_line('Professor inserted successfully with ID: ' || v_professor_id);
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Print the error message
+        dbms_output.put_line('Error: ' || sqlerrm);
+END;
+/
+
+
+
+
+CREATE OR REPLACE FUNCTION enroll_in_course(
+    p_course_crn IN course.crn%TYPE,
+    p_university_student_number IN student.university_student_number%TYPE
+) RETURN VARCHAR2
+AS
+    v_student_id student.id%TYPE;
+    v_course_id course.id%TYPE;
+    v_enrollment_count NUMBER;
+    v_seating_capacity course.seating_capacity%TYPE;
+BEGIN
+    -- Check if the student exists and get the student ID
+    SELECT id INTO v_student_id
+    FROM student
+    WHERE university_student_number = p_university_student_number;
+
+    -- Check if the course exists and get the course ID
+    SELECT id INTO v_course_id
+    FROM course
+    WHERE crn = p_course_crn;
+
+    -- Check for current number of enrollments in the course
+    SELECT COUNT(*)
+    INTO v_enrollment_count
+    FROM student_course
+    WHERE course_id = v_course_id;
+
+    -- Check the seating capacity of the course
+    SELECT seating_capacity INTO v_seating_capacity
+    FROM course
+    WHERE id = v_course_id;
+
+    -- Compare current enrollments with seating capacity
+    IF v_enrollment_count < v_seating_capacity THEN
+        -- Check if the student is already enrolled
+        SELECT COUNT(*)
+        INTO v_enrollment_count
+        FROM student_course
+        WHERE student_id = v_student_id
+        AND course_id = v_course_id;
+        
+        IF v_enrollment_count > 0 THEN
+            RETURN 'Student is already enrolled in this course.';
+        ELSE
+            -- Enroll the student in the course
+            INSERT INTO student_course (student_id, course_id)
+            VALUES (v_student_id, v_course_id);
+            RETURN 'Student successfully enrolled in the course.';
+        END IF;
+    ELSE
+        RETURN 'Course is at full capacity.';
+    END IF;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN 'Student or course not found.';
+    WHEN OTHERS THEN
+        RETURN 'Error enrolling student: ' || SQLERRM;
+END;
+/
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE FUNCTION Assign_Teaching_Assistant(
+    p_professor_email VARCHAR2,
+    p_course_id NUMBER,  -- Using course ID directly as per your schema
+    p_ta_email VARCHAR2,
+    p_start_date DATE,
+    p_end_date DATE,
+    p_employment_type_id NUMBER,
+    p_employment_designation_id NUMBER,
+    p_employment_status_id NUMBER,
+    p_comments VARCHAR2
+) RETURN VARCHAR2
+IS
+    v_professor_id NUMBER;
+    v_ta_id NUMBER;
+    v_course_count NUMBER;
+BEGIN
+    -- Retrieve the professor ID using the email
+    SELECT id INTO v_professor_id
+    FROM professor
+    WHERE email = p_professor_email;
+
+    -- Retrieve the TA ID using the TA email
+    SELECT id INTO v_ta_id
+    FROM student  -- Assuming TAs are recorded in the student table
+    WHERE email = p_ta_email;
+
+    -- Check if the course is taught by the professor
+    SELECT COUNT(*)
+    INTO v_course_count
+    FROM course
+    WHERE id = p_course_id AND professor_id = v_professor_id;
+
+    -- If no course matches, return an error message
+    IF v_course_count = 0 THEN
+        RETURN 'Error: No such course taught by this professor.';
+    END IF;
+
+    -- Insert the teaching assistant assignment
+    INSERT INTO course_teaching_assistant (
+        course_id,
+        student_id,
+        start_date,
+        end_date,
+        employment_type_id,
+        employment_designation_id,
+        employment_status_id,
+        comments,
+        created_by,
+        created_on,
+        updated_by,
+        updated_on
+    ) VALUES (
+        p_course_id,
+        v_ta_id,
+        p_start_date,
+        p_end_date,
+        p_employment_type_id,
+        p_employment_designation_id,
+        p_employment_status_id,
+        p_comments,
+        p_professor_email, -- Using the professor's email as the creator
+        SYSDATE,
+        p_professor_email, -- Using the professor's email as the updater
+        SYSDATE
+    );
+
+    -- Return success message
+    RETURN 'Teaching assistant assigned successfully.';
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN 'Error: Invalid professor email or TA email.';
+    WHEN OTHERS THEN
+        -- In case of any exception, return the error
+        RETURN 'Error: ' || SQLERRM;
+END;
+/
+
+
+
+
+
+
+
+
+
+
+
+CREATE OR REPLACE FUNCTION Enter_Assignment_Marks(
+    p_ta_id NUMBER,
+    p_course_id NUMBER,
+    p_course_assessment_id NUMBER,
+    p_student_course_id NUMBER,
+    p_marks NUMBER,
+    p_comments VARCHAR2
+) RETURN VARCHAR2
+IS
+    v_ta_course_count NUMBER;
+BEGIN
+    -- Check if the TA is assigned to the course
+    SELECT COUNT(*)
+    INTO v_ta_course_count
+    FROM course_teaching_assistant
+    WHERE STUDENT_ID = p_ta_id AND COURSE_ID = p_course_id;
+
+    IF v_ta_course_count = 0 THEN
+        RETURN 'Error: TA is not assigned to this course.';
+    END IF;
+    
+    -- Check if the marks are within a valid range (assumed 0 to 100)
+    IF p_marks < 0 OR p_marks > 100 THEN
+        RETURN 'Error: Marks must be between 0 and 100.';
+    END IF;
+
+    -- Enter the marks
+    INSERT INTO student_course_mark (
+        STUDENT_COURSE_ID,
+        COURSE_ASSESSMENT_ID,
+        OBTAINED_MARKS,
+        COMMENTS,
+        CREATED_BY,
+        CREATED_ON,
+        UPDATED_BY,
+        UPDATED_ON
+    ) VALUES (
+        p_student_course_id,
+        p_course_assessment_id,
+        p_marks,
+        p_comments,
+        TO_CHAR(p_ta_id), -- Assuming the TA's ID is being used to track who created/updated the record
+        SYSDATE,
+        TO_CHAR(p_ta_id),
+        SYSDATE
+    );
+
+    RETURN 'Marks entered successfully.';
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN 'Error: Invalid TA ID, course ID, or assessment ID.';
+    WHEN OTHERS THEN
+        RETURN 'Error: ' || SQLERRM;
+END;
+/
+
 
